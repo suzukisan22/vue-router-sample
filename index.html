@@ -9,6 +9,7 @@
   <div id="app">
     <router-link to="/top">トップページ</router-link>
     <router-link to="/users">ユーザー一覧</router-link>
+    <router-link to="/users/new">ユーザー新規作成</router-link>
     <router-view></router-view>
   </div>
   <script src="https://unpkg.com/vue@2.5.21"></script>
@@ -42,6 +43,29 @@
     </div>
   </script>
 
+  <script type="text/x-template" id="user-create">
+    <div>
+      <div class="sending" v-if="sending">Sending...</div>
+      <div>
+        <h2>新規ユーザー</h2>
+        <div>
+          <label>名前: </label>
+          <input type="text" v-model="user.name">
+        </div>
+        <div>
+          <label>説明文: </label>
+          <textarea v-model="user.description"></textarea>
+        </div>
+        <div v-if="error" class="error">
+          {{ error }}
+        </div>
+        <div>
+          <input type="button" @click="createUser" value="送信">
+        </div>
+      </div>
+    </div>
+  </script>
+
   <script>
     var userData = [
       {
@@ -70,6 +94,14 @@
         callback(null, filteredUsers && filteredUsers[0])
       }, 1000)
     };
+    
+    var postUser = function (params, callback) {
+      setTimeout(function() {
+        params.id = userData.length + 1
+        userData.push(params)
+        callback(null, params)
+      }, 1000)
+    }
 
     var UserList = {
       // HTML上のscriptタグのidを指定する。
@@ -142,6 +174,55 @@
       },
     }
 
+    // 新規ユーザー作成コンポーネント
+    var UserCreate = {
+      template: '#user-create',
+      data: function () {
+        return {
+          sending: false,
+          user: this.defaultUser(),
+          error: null
+        }
+      },
+      created: function () {
+      },
+      methods: {
+        defaultUser: function() {
+          return {
+            name: '',
+            description: ''
+          }
+        },
+
+        createUser: function () {
+          // 入力パラメータのバリデーション
+          if (this.user.name.trim() === ''){
+            this.error = 'Nameは必須です'
+            return
+          }
+
+          if (this.user.description.trim() === ''){
+            this.error = 'Descriptionは必須です'
+            return
+          }
+
+          postUser(this.user, (function (err, user) {
+            this.sending = false
+            if (err) {
+              this.error = err.toString()
+            } else {
+              this.error = null
+              // デフォルトでフォームをリセット
+              this.user = this.defaultUser()
+              alert('新規ユーザーが登録されました')
+              // ユーザー一覧ページに戻る
+              this.$router.push('/users')
+            }
+          }).bind(this))
+        }
+      }
+    }
+
     var router = new VueRouter({
       routes: [
         {
@@ -153,6 +234,11 @@
         {
           path: '/users',
           component: UserList
+        },
+        {
+          // ルート定義を追加
+          path: '/users/new',
+          component: UserCreate
         },
         {
           path: '/users/:userId',
