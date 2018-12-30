@@ -7,13 +7,18 @@
 </head>
 <body>
   <div id="app">
-    <router-link to="/top">トップページ</router-link>
-    <router-link to="/users">ユーザー一覧</router-link>
-    <router-link to="/users/new">ユーザー新規作成</router-link>
+    <nav>
+      <router-link to="/top">トップページ</router-link>
+      <router-link to="/users">ユーザー一覧</router-link>
+      <router-link to="/users/new?redirect=true">ユーザー新規作成</router-link>
+      <router-link to="/login">ログイン</router-link>
+      <router-link to="/logout">ログアウト</router-link>
+    </nav>
     <router-view></router-view>
   </div>
   <script src="https://unpkg.com/vue@2.5.21"></script>
   <script src="https://unpkg.com/vue-router@3.0.1"></script>
+
   <script type="text/x-template" id="user-list">
     <!-- コンポーネントで使用するテンプレートHTMLを記載-->
     <div>
@@ -66,7 +71,44 @@
     </div>
   </script>
 
+  <script type="text/x-template" id="login">
+    <div>
+      <h2>Login</h2>
+      <p v-if="$route.query.redirect">ログインしてください</p>
+      <form @submit.prevent="login">
+        <label><input v-model="email" placeholder="email"></label>
+        <label><input v-model="pass" placeholder="password" type="password"></label><br>
+        <button type="submit">ログイン</button>
+        <p v-if="error" class="error">ログインに失敗しました</p>
+      </form>
+    </div>
+  </script>
+
   <script>
+    var Auth = {
+      login: function(email, pass, cb){
+        // ダミーデータを使った擬似ログイン
+        setTimeout(function () {
+          if (email === 'vue@example.com' && pass === 'vue') {
+            // ログイン成功時はローカルストレージにtokenを保存する
+            localStorage.token = Math.random().toString(36).substring(7)
+            if (cb) { cb(true) }
+          } else {
+            if (cb) { cb(false) }
+          }
+        }, 0)
+      },
+
+      logout: function() {
+        delete localStorage.token
+      },
+
+      loggedIn: function() {
+        // ローカルストレージにtokenがあればログイン状態とみなす
+        return !!localStorage.token
+      }
+    }
+
     var userData = [
       {
         id: 1,
@@ -223,6 +265,30 @@
       }
     }
 
+    // ログインコンポーネント
+    var Login = {
+      template: '#login',
+      data: function () {
+        return {
+          email: 'vue@example.com',
+          pass: '',
+          error: false
+        }
+      },
+      methods: {
+        login: function () {
+          Auth.login(this.email, this.pass, (function (loggedIn) {
+            if (!loggedIn) {
+              this.error = true
+            } else {
+              // redirectパラメータが付いている場合はそのパスに遷移
+              this.$router.replace(this.$route.query.redirect || '/')
+            }
+          }).bind(this))
+        }
+      }
+    }
+
     var router = new VueRouter({
       routes: [
         {
@@ -238,11 +304,34 @@
         {
           // ルート定義を追加
           path: '/users/new',
-          component: UserCreate
+          component: UserCreate,
+          beforeEnter: (to, from, next) => {
+            // 認証されていない状態でアクセスした時はloginページに遷移する
+            if (!Auth.loggedIn()) {
+              next({
+                path: '/login',
+                query: { redirect: to.fullPath }
+              })
+            } else {
+              // 認証済みであればそのまま新規ユーザー作成ページへ進む
+              next()
+            }
+          }
         },
         {
           path: '/users/:userId',
           component: UserDetail
+        },
+        {
+          path: '/login',
+          component: Login
+        },
+        {
+          path: '/logout',
+          beforeEnter: function(to, from, next){
+            Auth.logout()
+            next('/')
+          }
         }
       ]
     })
