@@ -13,6 +13,9 @@
     "webpack-cli": "^3.1.2",
     "webpack-dev-server": "^3.1.14"
   },
+  "scripts": {
+    "start": "./node_modules/.bin/webpack-dev-server"
+  },
   "devDependencies": {
     "vue-loader": "^15.4.2",
     "vue-template-compiler": "^2.5.21"
