@@ -38,6 +38,7 @@ export default new Router ({
       }
     },
     {
+      name: 'UserDetail',
       path: '/users/:userId',
       component: UserDetail
     },

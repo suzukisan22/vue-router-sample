@@ -7,7 +7,11 @@
     </div>
     <!-- usersがロードされたら各ユーザーの名前を表示する -->
     <div v-for="user in users" :key="user.id">
-      <h2>{{ user.name }}</h2>
+      <h2>
+        <router-link v-bind:to="{name: 'UserDetail', params : { userId: user.id }}">
+          {{ user.name }}
+        </router-link>
+      </h2>
     </div>
   </div>
 </template>
